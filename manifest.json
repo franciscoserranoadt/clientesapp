@@ -1,6 +1,6 @@
 {
-  "name": "Clientes — Camisetas Football",
-  "short_name": "Clientes CF",
+  "name": "GESTION CLIENTES",
+  "short_name": "Gestion Clientes",
   "description": "Gestión de clientes, pedidos y presupuestos",
   "start_url": "./index.html",
   "display": "standalone",
