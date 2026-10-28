@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>GESTION CLIENTES</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0f14">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{
@@ -929,6 +934,6 @@ function emptyHTML(icon,msg){
 
 /* ================= INIT ================= */
 loadState();
-</script>
-</body>
-</html>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
