@@ -279,6 +279,9 @@ nav button.active svg{filter:drop-shadow(0 0 8px rgba(163,230,53,.5))}
 .hint{font-size:12px;color:var(--faint);text-align:center;margin-top:14px;line-height:1.5}
 .divider{height:1px;background:rgba(255,255,255,.07);margin:14px 0}
 
+.quick-row{display:flex;gap:8px;margin:-6px 0 14px}
+.quick-row button{flex:none;padding:7px 12px;border-radius:99px;border:1px solid rgba(255,255,255,.1);background:var(--card);color:var(--muted);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}
+
 /* ---------- RENTABILIDAD ---------- */
 .rent-hero{display:flex;align-items:center;gap:16px}
 .ring{width:86px;height:86px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:conic-gradient(var(--rc) calc(var(--p)*1%),var(--card3) 0)}
@@ -503,10 +506,15 @@ function openWhatsApp(phone){
 /* ================= CLIENTES ================= */
 const clienteById=id=>state.clientes.find(c=>c.id===id);
 const avatarColor=n=>AVCOLORS[(n||'?').charCodeAt(0)%AVCOLORS.length];
+/* Dirección completa en una línea */
+function dirCompleta(c){
+  if(!c)return '';
+  return [c.direccion,[c.cp,c.ciudad].filter(Boolean).join(' '),c.provincia,c.pais].filter(Boolean).join(', ');
+}
 
 function renderClientes(){
   const q=(document.getElementById('searchClientes').value||'').toLowerCase();
-  const list=state.clientes.filter(c=>!q||c.nombre.toLowerCase().includes(q)||(c.telegram||'').toLowerCase().includes(q)||(c.telefono||'').includes(q));
+  const list=state.clientes.filter(c=>!q||c.nombre.toLowerCase().includes(q)||(c.telegram||'').toLowerCase().includes(q)||(c.telefono||'').includes(q)||dirCompleta(c).toLowerCase().includes(q));
   document.getElementById('countClientes').textContent=state.clientes.length;
   const el=document.getElementById('listClientes');
   if(!list.length){el.innerHTML=emptyHTML('users','No hay clientes todavía.<br>Pulsa el botón <b>+</b> para añadir el primero.');return;}
@@ -525,7 +533,7 @@ function renderClientes(){
       <div class="tag-row">
         <span class="tag">${pedidos.length} pedido${pedidos.length!==1?'s':''}</span>
         <span class="tag">${eur(total)} acumulado</span>
-        ${c.direccion?`<span class="tag">📍 ${esc(c.direccion)}</span>`:''}
+        ${dirCompleta(c)?`<span class="tag">📍 ${esc(dirCompleta(c))}</span>`:''}
       </div>
       <div class="card-actions">
         <button class="mini-btn wa" onclick="openWhatsApp('${esc(c.telefono||"")}')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413"/></svg>WhatsApp</button>
@@ -543,7 +551,15 @@ function openClienteForm(id){
     <div class="field"><label>Nombre *</label><input id="fCName" value="${c?esc(c.nombre):''}" placeholder="Nombre del cliente"></div>
     <div class="field"><label>Teléfono</label><input id="fCPhone" value="${c?esc(c.telefono||''):''}" placeholder="+34 ..." inputmode="tel"></div>
     <div class="field"><label>Telegram</label><input id="fCTg" value="${c?esc(c.telegram||''):''}" placeholder="@usuario"></div>
-    <div class="field"><label>Dirección / Ciudad</label><input id="fCAddr" value="${c?esc(c.direccion||''):''}" placeholder="Ciudad, dirección de envío..."></div>
+    <div class="field"><label>Dirección</label><input id="fCAddr" value="${c?esc(c.direccion||''):''}" placeholder="Calle, número, piso..."></div>
+    <div class="grid-2f">
+      <div class="field"><label>Código postal</label><input id="fCCp" value="${c?esc(c.cp||''):''}" placeholder="28001" inputmode="numeric"></div>
+      <div class="field"><label>Ciudad</label><input id="fCCity" value="${c?esc(c.ciudad||''):''}" placeholder="Madrid"></div>
+    </div>
+    <div class="grid-2f">
+      <div class="field"><label>Provincia</label><input id="fCProv" value="${c?esc(c.provincia||''):''}" placeholder="Madrid"></div>
+      <div class="field"><label>País</label><input id="fCPais" value="${c?esc(c.pais||''):''}" placeholder="España"></div>
+    </div>
     <div class="field"><label>Notas</label><textarea id="fCNotes" placeholder="Tallas habituales, preferencias...">${c?esc(c.notas||''):''}</textarea></div>
     <button class="btn pri" onclick="saveCliente('${id||''}')">${c?'Guardar cambios':'Añadir cliente'}</button>`);
   setTimeout(()=>document.getElementById('fCName').focus(),350);
@@ -552,7 +568,7 @@ function openClienteForm(id){
 function saveCliente(id){
   const nombre=document.getElementById('fCName').value.trim();
   if(!nombre){toast('El nombre es obligatorio');return;}
-  const data={nombre,telefono:document.getElementById('fCPhone').value.trim(),telegram:document.getElementById('fCTg').value.trim(),direccion:document.getElementById('fCAddr').value.trim(),notas:document.getElementById('fCNotes').value.trim()};
+  const data={nombre,telefono:document.getElementById('fCPhone').value.trim(),telegram:document.getElementById('fCTg').value.trim(),direccion:document.getElementById('fCAddr').value.trim(),cp:document.getElementById('fCCp').value.trim(),ciudad:document.getElementById('fCCity').value.trim(),provincia:document.getElementById('fCProv').value.trim(),pais:document.getElementById('fCPais').value.trim(),notas:document.getElementById('fCNotes').value.trim()};
   if(id){Object.assign(clienteById(id),data);toast('Cliente actualizado');}
   else{state.clientes.unshift({id:uid(),created:Date.now(),...data});toast('Cliente añadido');}
   saveState();closeModal();refreshAll();
@@ -589,7 +605,7 @@ function renderArticulos(){
         const ben=o.precio-ct, m=o.precio?ben/o.precio*100:0;
         return `<span class="tag">${esc(o.nombre)} · ${eur(o.precio)} · coste ${eur(ct)}</span><span class="margen-pill ${ben>=0?'pos':'neg'}">${ben>=0?'+':''}${eur(ben)} (${pct(m)}) sin envío</span>`;
       }).join('')}</div>
-
+      ${a.tallas&&a.tallas.length?`<div class="tag-row"><span class="tag">📏 Tallas: ${a.tallas.map(esc).join(' · ')}</span></div>`:''}
       <div class="card-actions">
         <button class="mini-btn sec" onclick="openArticuloForm('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>Editar</button>
         <button class="mini-btn dan" onclick="delArticulo('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
@@ -619,7 +635,7 @@ const pct=n=>(Math.round(n*10)/10).toString().replace('.',',')+'%';
 function opcRowHTML(o){
   return `<div class="b-item opc-row">
     <div class="grid2" style="grid-template-columns:1fr 90px 90px 34px;margin-top:0;align-items:center">
-      <input class="op-nombre" placeholder="Opción (ej: Versión fan, Talla L...)" value="${esc(o?o.nombre:'')}">
+      <input class="op-nombre" placeholder="Opción (ej: Versión fan, Jugador...)" value="${esc(o?o.nombre:'')}">
       <input class="op-precio" type="number" step="0.01" min="0" placeholder="Precio" value="${o?o.precio:''}">
       <input class="op-costo" type="number" step="0.01" min="0" placeholder="Coste prod." value="${o&&o.costo?o.costo:''}">
       <button class="b-del" onclick="this.closest('.opc-row').remove()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
@@ -633,6 +649,12 @@ function openArticuloForm(id){
   openSheet(`<h2>${a?'Editar artículo':'Nuevo artículo'}</h2>
     <div class="field"><label>Nombre *</label><input id="fAName" value="${a?esc(a.nombre):''}" placeholder="Ej: Real Madrid 2026"></div>
     <div class="field"><label>Categoría</label><input id="fACat" value="${a?esc(a.categoria||''):''}" placeholder="Ej: LaLiga, Selecciones..."></div>
+    <div class="field"><label>Tallas / tamaños</label><input id="fATallas" value="${a&&a.tallas?esc(a.tallas.join(', ')):''}" placeholder="Ej: S, M, L, XL (separadas por comas)"></div>
+    <div class="quick-row">
+      <button onclick="document.getElementById('fATallas').value='S, M, L, XL, XXL'">Adulto S–XXL</button>
+      <button onclick="document.getElementById('fATallas').value='16, 18, 20, 22, 24, 26, 28'">Niño 16–28</button>
+      <button onclick="document.getElementById('fATallas').value=''">Sin tallas</button>
+    </div>
     <div class="field"><label>Opciones: nombre · precio venta · coste producto *</label></div>
     <div id="opcContainer">${ops.map(opcRowHTML).join('')}</div>
     <button class="add-line" onclick="document.getElementById('opcContainer').insertAdjacentHTML('beforeend',opcRowHTML(null))">+ Añadir opción</button>
@@ -651,7 +673,8 @@ function saveArticulo(id){
     if(n&&!isNaN(p)) opciones.push({nombre:n,precio:p,costo:isNaN(c)?null:c});
   });
   if(!opciones.length){toast('Añade al menos una opción con precio');return;}
-  const data={nombre,categoria:document.getElementById('fACat').value.trim(),opciones};
+  const tallas=document.getElementById('fATallas').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const data={nombre,categoria:document.getElementById('fACat').value.trim(),tallas,opciones};
   if(id)Object.assign(articuloById(id),data);else state.articulos.unshift({id:uid(),...data});
   saveState();closeModal();refreshAll();toast('Artículo guardado');
 }
@@ -677,6 +700,7 @@ function bRowHTML(it,i){
       <div class="field" style="margin:0"><select onchange="bOpcChange(${i},this.value)">${opOpts}</select></div>
       <div class="field" style="margin:0"><input type="number" min="1" value="${it.cantidad}" onchange="bCantChange(${i},this.value)"></div>
     </div>
+    ${art&&art.tallas&&art.tallas.length?`<div class="field" style="margin:8px 0 0"><select onchange="bTallaChange(${i},this.value)"><option value="">Elige talla...</option>${art.tallas.map(t=>`<option value="${esc(t)}" ${t===it.talla?'selected':''}>Talla ${esc(t)}</option>`).join('')}</select></div>`:''}
     ${art?`<div class="tot-row" style="justify-content:flex-end"><span>Subtotal: <b style="color:var(--accent)">${eur(precio*it.cantidad)}</b></span></div>`:''}
   </div>`;
 }
@@ -684,9 +708,15 @@ function renderBuilder(){
   document.getElementById('bItems').innerHTML=builderItems.length?builderItems.map(bRowHTML).join(''):'<p class="hint" style="margin:8px 0 12px">Añade artículos al pedido.</p>';
   updateTotals();
 }
-function addBItem(){builderItems.push({articuloId:'',opcionIdx:0,cantidad:1});renderBuilder();}
+function addBItem(){builderItems.push({articuloId:'',opcionIdx:0,cantidad:1,talla:''});renderBuilder();}
 function removeBItem(i){builderItems.splice(i,1);renderBuilder();}
-function bArtChange(i,v){builderItems[i].articuloId=v;builderItems[i].opcionIdx=0;renderBuilder();}
+function bArtChange(i,v){builderItems[i].articuloId=v;builderItems[i].opcionIdx=0;builderItems[i].talla='';renderBuilder();}
+function bTallaChange(i,v){builderItems[i].talla=v;}
+function faltaTalla(){
+  return builderItems.some(it=>{const a=articuloById(it.articuloId);return a&&a.tallas&&a.tallas.length&&!it.talla;});
+}
+/* Texto de un ítem: nombre · opción · talla */
+function itemLabel(i){return i.nombre+(i.opcion?' · '+i.opcion:'')+(i.talla?' · Talla '+i.talla:'');}
 function bOpcChange(i,v){builderItems[i].opcionIdx=parseInt(v)||0;updateTotals();}
 function bCantChange(i,v){builderItems[i].cantidad=Math.max(1,parseInt(v)||1);renderBuilder();}
 
@@ -720,7 +750,7 @@ function updateTotals(){
 function validItems(){
   return builderItems.filter(it=>it.articuloId&&articuloById(it.articuloId)).map(it=>{
     const a=articuloById(it.articuloId);const o=a.opciones[it.opcionIdx||0];
-    return {articuloId:a.id,nombre:a.nombre,opcion:o.nombre,precio:o.precio,costo:costeTotal(a,o)||0,cantidad:it.cantidad};
+    return {articuloId:a.id,nombre:a.nombre,opcion:o.nombre,talla:it.talla||'',precio:o.precio,costo:costeTotal(a,o)||0,cantidad:it.cantidad};
   });
 }
 function clienteSelectHTML(selId,pre){
@@ -747,7 +777,7 @@ function renderPedidos(){
   const q=(document.getElementById('searchPedidos').value||'').toLowerCase();
   const list=state.pedidos.filter(p=>{
     const c=clienteById(p.clienteId);
-    return !q||(c&&c.nombre.toLowerCase().includes(q))||p.id.toLowerCase().includes(q)||p.items.some(i=>i.nombre.toLowerCase().includes(q));
+    return !q||(c&&c.nombre.toLowerCase().includes(q))||p.id.toLowerCase().includes(q)||(p.seguimiento||'').toLowerCase().includes(q)||p.items.some(i=>i.nombre.toLowerCase().includes(q));
   }).sort((a,b)=>b.fecha-a.fecha);
   document.getElementById('countPedidos').textContent=state.pedidos.length;
   const el=document.getElementById('listPedidos');
@@ -762,7 +792,7 @@ function renderPedidos(){
         </div>
         <span class="chip ${p.estado}">${ESTADO_LABEL[p.estado]}</span>
       </div>
-      <div class="tag-row">${p.items.slice(0,3).map(i=>`<span class="tag">${esc(i.nombre)}${i.opcion?' · '+esc(i.opcion):''} ×${i.cantidad}</span>`).join('')}${p.items.length>3?`<span class="tag">+${p.items.length-3}</span>`:''}</div>
+      <div class="tag-row">${p.items.slice(0,3).map(i=>`<span class="tag">${esc(itemLabel(i))} ×${i.cantidad}</span>`).join('')}${p.items.length>3?`<span class="tag">+${p.items.length-3}</span>`:''}${p.seguimiento?`<span class="tag">📦 ${esc(p.seguimiento)}</span>`:''}</div>
       <div class="card-top" style="margin-top:10px;align-items:center">
         <div class="price-big">${eur(pedidoTotal(p))}</div>
         ${p.margen!=null?`<span class="margen-pill ${p.margen>=0?'pos':'neg'}">margen ${eur(p.margen)}</span>`:''}
@@ -778,7 +808,8 @@ function openPedidoForm(clientePre){
   openSheet(`<h2>Nuevo pedido</h2>
     ${clienteSelectHTML('fPCliente',clientePre||'')}
     ${builderHTML()}
-    <div class="field"><label>Notas</label><textarea id="fPNotes" placeholder="Envío, tallas, parches..."></textarea></div>
+    <div class="field"><label>Nº de seguimiento</label><input id="fPTrack" placeholder="Opcional, puedes añadirlo después"></div>
+    <div class="field"><label>Notas</label><textarea id="fPNotes" placeholder="Envío, parches, dorsal..."></textarea></div>
     <button class="btn pri" onclick="savePedido()">Crear pedido</button>`);
   renderBuilder();addBItem();
 }
@@ -788,8 +819,9 @@ function savePedido(){
   if(!clienteId){toast('Selecciona un cliente');return;}
   const items=validItems();
   if(!items.length){toast('Añade al menos un artículo válido');return;}
+  if(faltaTalla()){toast('Elige la talla de todos los artículos');return;}
   const t=calcTotals();
-  state.pedidos.unshift({id:uid(),clienteId,items,total:t.venta,envio:t.envio,aduanas:t.aduanas,margen:t.coste?t.margen:null,estado:'pendiente',notas:document.getElementById('fPNotes').value.trim(),fecha:Date.now(),historial:[{fecha:Date.now(),texto:'Pedido creado'}]});
+  state.pedidos.unshift({id:uid(),clienteId,items,total:t.venta,envio:t.envio,aduanas:t.aduanas,margen:t.coste?t.margen:null,seguimiento:document.getElementById('fPTrack').value.trim(),estado:'pendiente',notas:document.getElementById('fPNotes').value.trim(),fecha:Date.now(),historial:[{fecha:Date.now(),texto:'Pedido creado'}]});
   saveState();closeModal();refreshAll();toast('Pedido creado');
 }
 
@@ -799,7 +831,7 @@ function openPedidoDetail(id){
   openSheet(`<h2>Pedido · ${c?esc(c.nombre):'Cliente eliminado'}</h2>
     <p style="font-size:12.5px;color:var(--muted);margin:-8px 0 14px">${fdate(p.fecha)} · ${p.id.slice(-6).toUpperCase()}</p>
     <div class="totals-box">
-      ${p.items.map(i=>`<div class="tot-row"><span>${esc(i.nombre)}${i.opcion?' · '+esc(i.opcion):''} ×${i.cantidad}</span><span>${eur(i.precio*i.cantidad)}</span></div>`).join('')}
+      ${p.items.map(i=>`<div class="tot-row"><span>${esc(itemLabel(i))} ×${i.cantidad}</span><span>${eur(i.precio*i.cantidad)}</span></div>`).join('')}
       <div class="tot-row grand"><span>TOTAL</span><span class="price-big">${eur(p.total)}</span></div>
     </div>
     <div class="grid-2f">
@@ -807,6 +839,7 @@ function openPedidoDetail(id){
       <div class="field"><label>Aduanas €</label><input type="number" step="0.01" min="0" value="${p.aduanas||''}" placeholder="0,00" onchange="updPedidoExtra('${p.id}','aduanas',this.value)"></div>
     </div>
     <div class="totals-box" id="dMargen">${margenDetalleHTML(p)}</div>
+    <div class="field"><label>Nº de seguimiento</label><input value="${esc(p.seguimiento||'')}" placeholder="Pega aquí el número de seguimiento" onchange="updSeguimiento('${p.id}',this.value)"></div>
     <div class="field"><label>Estado</label><select id="dEstado" onchange="detailEstadoChange('${p.id}',this.value)">${PED_ESTADOS.map(e=>`<option value="${e}" ${p.estado===e?'selected':''}>${ESTADO_LABEL[e]}</option>`).join('')}</select></div>
     ${p.notas?`<div class="field"><label>Notas</label><div style="font-size:13.5px;color:var(--muted);background:var(--card);border-radius:var(--radius-s);padding:12px 14px">${esc(p.notas)}</div></div>`:''}
     <div class="timeline"><h4>Historial</h4>${p.historial.map(h=>`<div class="tl-item"><div class="tl-dot"></div><div class="tl-txt"><b>${fdate(h.fecha)}</b> — ${esc(h.texto)}</div></div>`).join('')}</div>
@@ -832,6 +865,14 @@ function updPedidoExtra(id,campo,val){
   saveState();refreshAll();
   const box=document.getElementById('dMargen');if(box)box.innerHTML=margenDetalleHTML(p);
   toast('Coste actualizado');
+}
+
+function updSeguimiento(id,val){
+  const p=state.pedidos.find(x=>x.id===id);if(!p)return;
+  const v=val.trim();if(v===(p.seguimiento||''))return;
+  p.seguimiento=v;
+  p.historial.push({fecha:Date.now(),texto:v?'Nº de seguimiento: '+v:'Nº de seguimiento borrado'});
+  saveState();refreshAll();toast('Seguimiento guardado');
 }
 
 function detailEstadoChange(id,newEstado){
@@ -866,31 +907,58 @@ function renderPresupuestos(){
       <div class="card-actions">
         <button class="mini-btn pri" onclick="downloadPresupuestoPDF('${pr.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>PDF</button>
         ${pr.estado==='pendiente'?`<button class="mini-btn sec" style="flex:1.4;color:var(--ok)" onclick="aceptarPresupuesto('${pr.id}')">✓ Aceptar → Pedido</button>`:''}
-        <button class="mini-btn sec" onclick="delPresupuesto('${pr.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+        <button class="mini-btn sec" onclick="openPresupuestoForm('${pr.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
+        <button class="mini-btn dan" onclick="delPresupuesto('${pr.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
       </div>
     </div>`;
   }).join('');
 }
 
-function openPresupuestoForm(){
+function openPresupuestoForm(id){
   if(!state.clientes.length){toast('Primero añade un cliente');return;}
   if(!state.articulos.length){toast('Primero añade un artículo');return;}
+  const pr=id?state.presupuestos.find(x=>x.id===id):null;
   builderItems=[];
-  openSheet(`<h2>Nuevo presupuesto</h2>
-    ${clienteSelectHTML('fPrCliente','')}
+  let perdidos=0;
+  if(pr){
+    builderItems=pr.items.map(i=>{
+      const a=articuloById(i.articuloId);
+      if(!a){perdidos++;return null;}
+      let idx=a.opciones.findIndex(o=>o.nombre===i.opcion);if(idx<0)idx=0;
+      return {articuloId:a.id,opcionIdx:idx,cantidad:i.cantidad,talla:i.talla||''};
+    }).filter(Boolean);
+  }
+  openSheet(`<h2>${pr?'Editar presupuesto':'Nuevo presupuesto'}</h2>
+    ${clienteSelectHTML('fPrCliente',pr?pr.clienteId:'')}
     ${builderHTML()}
-    <button class="btn pri" onclick="savePresupuesto()">Crear presupuesto</button>`);
-  renderBuilder();addBItem();
+    <button class="btn pri" onclick="savePresupuesto('${pr?pr.id:''}')">${pr?'Guardar cambios':'Crear presupuesto'}</button>
+    ${pr?'<p class="hint">Los precios se actualizan a los que tengan ahora los artículos.</p>':''}`);
+  if(pr){
+    const fE=document.getElementById('fEnvio'),fA=document.getElementById('fAduanas');
+    if(pr.envio!=null){fE.value=pr.envio||'';extrasManual.envio=true;}
+    if(pr.aduanas!=null){fA.value=pr.aduanas||'';extrasManual.aduanas=true;}
+  }
+  renderBuilder();
+  if(!builderItems.length)addBItem();
+  if(perdidos)toast(perdidos+' artículo(s) ya no existen y se han quitado');
 }
 
-function savePresupuesto(){
+function savePresupuesto(id){
   const clienteId=document.getElementById('fPrCliente').value;
   if(!clienteId){toast('Selecciona un cliente');return;}
   const items=validItems();
   if(!items.length){toast('Añade al menos un artículo válido');return;}
+  if(faltaTalla()){toast('Elige la talla de todos los artículos');return;}
   const t=calcTotals();
-  state.presupuestos.unshift({id:uid(),clienteId,items,envio:t.envio,aduanas:t.aduanas,estado:'pendiente',fecha:Date.now()});
-  saveState();closeModal();refreshAll();toast('Presupuesto creado');
+  const pr=id?state.presupuestos.find(x=>x.id===id):null;
+  if(pr){
+    Object.assign(pr,{clienteId,items,envio:t.envio,aduanas:t.aduanas});
+    toast('Presupuesto actualizado');
+  }else{
+    state.presupuestos.unshift({id:uid(),clienteId,items,envio:t.envio,aduanas:t.aduanas,estado:'pendiente',fecha:Date.now()});
+    toast('Presupuesto creado');
+  }
+  saveState();closeModal();refreshAll();
 }
 
 function aceptarPresupuesto(id){
@@ -900,7 +968,7 @@ function aceptarPresupuesto(id){
   const uds=pr.items.reduce((s,i)=>s+i.cantidad,0);
   const np={id:uid(),clienteId:pr.clienteId,items:pr.items,total:t,envio:pr.envio!=null?pr.envio:envioPara(uds),aduanas:pr.aduanas!=null?pr.aduanas:aduanaDefecto()};
   np.margen=pedidoMargen(np);
-  state.pedidos.unshift({...np,estado:'pendiente',notas:'',fecha:Date.now(),historial:[{fecha:Date.now(),texto:'Creado desde presupuesto'}]});
+  state.pedidos.unshift({...np,seguimiento:'',estado:'pendiente',notas:'',fecha:Date.now(),historial:[{fecha:Date.now(),texto:'Creado desde presupuesto'}]});
   pr.estado='aceptado';
   saveState();refreshAll();toast('Presupuesto convertido en pedido');
 }
@@ -921,26 +989,37 @@ function downloadPresupuestoPDF(id){
 function downloadPedidoPDF(id){
   const p=state.pedidos.find(x=>x.id===id);if(!p)return;
   const c=clienteById(p.clienteId);
-  generarPDF('PEDIDO',c,p.items,p.total,p.fecha);
+  generarPDF('PEDIDO',c,p.items,p.total,p.fecha,p.seguimiento);
 }
-function generarPDF(titulo,cliente,items,total,fecha){
+function generarPDF(titulo,cliente,items,total,fecha,seguimiento){
   try{
     const {jsPDF}=window.jspdf;
     const doc=new jsPDF();
     const W=doc.internal.pageSize.getWidth();
     doc.setFillColor(163,230,53);doc.rect(0,0,W,28,'F');
     doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(11,15,20);
-    doc.text('GESTION CLIENTES',14,12);
+    doc.text(titulo,14,12);
     doc.setFontSize(11);doc.setFont('helvetica','normal');
-    doc.text(titulo+' · '+new Date(fecha).toLocaleDateString('es-ES'),14,20);
+    doc.text(new Date(fecha).toLocaleDateString('es-ES'),14,20);
     doc.setTextColor(40,40,40);
     let y=40;
     if(cliente){
       doc.setFont('helvetica','bold');doc.setFontSize(12);doc.text('Cliente',14,y);y+=7;
       doc.setFont('helvetica','normal');doc.setFontSize(11);
-      doc.text(doc.splitTextToSize(cliente.nombre,90),14,y);y+=6;
-      if(cliente.telegram)doc.text('Telegram: '+cliente.telegram,14,y);
-      y+=12;
+      const lin=[cliente.nombre];
+      if(cliente.telefono)lin.push('Teléfono: '+cliente.telefono);
+      if(cliente.telegram)lin.push('Telegram: '+cliente.telegram);
+      if(cliente.direccion)lin.push(cliente.direccion);
+      const l2=[cliente.cp,cliente.ciudad].filter(Boolean).join(' ')+(cliente.provincia?(cliente.cp||cliente.ciudad?' (':'')+cliente.provincia+(cliente.cp||cliente.ciudad?')':''):'');
+      if(l2)lin.push(l2);
+      if(cliente.pais)lin.push(cliente.pais);
+      lin.forEach(t=>{const w=doc.splitTextToSize(t,170);doc.text(w,14,y);y+=w.length*6;});
+      y+=6;
+    }
+    if(seguimiento){
+      doc.setFont('helvetica','bold');doc.text('Nº de seguimiento: ',14,y);
+      doc.setFont('helvetica','normal');doc.text(seguimiento,14+doc.getTextWidth('Nº de seguimiento: '),y);
+      y+=10;
     }
     doc.setDrawColor(220,220,220);doc.line(14,y,W-14,y);y+=9;
     doc.setFontSize(11);doc.setFont('helvetica','bold');
@@ -948,7 +1027,8 @@ function generarPDF(titulo,cliente,items,total,fecha){
     y+=3;doc.setFont('helvetica','normal');doc.setDrawColor(230,230,230);doc.line(14,y,W-14,y);y+=8;
     items.forEach(it=>{
       if(y>270){doc.addPage();y=20;}
-      const lineas=doc.splitTextToSize(it.nombre+(it.opcion?' ('+it.opcion+')':''),95);
+      const det=[it.opcion,it.talla?'Talla '+it.talla:''].filter(Boolean).join(', ');
+      const lineas=doc.splitTextToSize(it.nombre+(det?' ('+det+')':''),95);
       doc.text(lineas,14,y);
       doc.text(String(it.cantidad),120,y,{align:'right'});
       doc.text(it.precio.toFixed(2)+' €',150,y,{align:'right'});
@@ -959,7 +1039,7 @@ function generarPDF(titulo,cliente,items,total,fecha){
     doc.setFont('helvetica','bold');doc.setFontSize(14);
     doc.text('TOTAL: '+total.toFixed(2)+' €',W-14,y,{align:'right'});
     y+=14;doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(140,140,140);
-    doc.text('Pedidos por Telegram: @pacopoyo',14,y);
+    doc.text('Pedidos por Telegram: @equiposcamisetass',14,y);
     doc.save(titulo.toLowerCase()+'_'+(cliente?cliente.nombre.replace(/\s+/g,'_'):'cliente')+'.pdf');
     toast('PDF descargado');
   }catch(e){toast('Error al generar el PDF');}
