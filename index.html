@@ -278,6 +278,31 @@ nav button.active svg{filter:drop-shadow(0 0 8px rgba(163,230,53,.5))}
 .hidden{display:none!important}
 .hint{font-size:12px;color:var(--faint);text-align:center;margin-top:14px;line-height:1.5}
 .divider{height:1px;background:rgba(255,255,255,.07);margin:14px 0}
+
+/* ---------- RENTABILIDAD ---------- */
+.rent-hero{display:flex;align-items:center;gap:16px}
+.ring{width:86px;height:86px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:conic-gradient(var(--rc) calc(var(--p)*1%),var(--card3) 0)}
+.ring span{width:66px;height:66px;border-radius:50%;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:16px}
+.ring small{font-size:9px;color:var(--muted);font-weight:700}
+.rent-nums{flex:1;min-width:0}
+.rent-nums .r-big{font-size:22px;font-weight:800}
+.rent-nums .r-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.stack{display:flex;height:12px;border-radius:99px;overflow:hidden;background:var(--card3);margin:14px 0 8px}
+.stack div{height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11.5px;color:var(--muted)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.rent-h{font-size:13px;font-weight:800;margin:4px 0 10px}
+.mchart{display:flex;align-items:flex-end;gap:8px;height:130px}
+.mcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%}
+.mbars{flex:1;display:flex;align-items:flex-end;justify-content:center;gap:3px;width:100%}
+.mbars div{width:42%;border-radius:4px 4px 0 0;min-height:2px}
+.mcol span{font-size:10px;color:var(--faint);font-weight:700}
+.hbar{margin-bottom:11px}
+.hbar-top{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin-bottom:5px}
+.hbar-top b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbar-track{height:8px;background:var(--card3);border-radius:99px;overflow:hidden}
+.hbar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--cyan))}
+.grid-2f{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 </style>
 </head>
 <body class="locked">
@@ -334,6 +359,7 @@ nav button.active svg{filter:drop-shadow(0 0 8px rgba(163,230,53,.5))}
   <section class="view" id="view-ajustes">
     <div class="sec-title"><h2>Ajustes</h2></div>
     <div class="stat-grid" id="statGrid"></div>
+    <div id="rentBox"></div>
     <div class="set-group"><h3>Datos</h3>
       <button class="set-item" onclick="exportBackup()">
         <div class="s-ic" style="background:rgba(52,211,153,.12);color:var(--ok)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg></div>
@@ -346,6 +372,13 @@ nav button.active svg{filter:drop-shadow(0 0 8px rgba(163,230,53,.5))}
         <div class="s-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg></div>
       </button>
       <input type="file" id="importFile" accept=".json,application/json" class="hidden" onchange="importBackup(this)">
+    </div>
+    <div class="set-group"><h3>Costes de compra</h3>
+      <button class="set-item" onclick="openCostesConfig()">
+        <div class="s-ic" style="background:rgba(251,191,36,.12);color:var(--warn)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></div>
+        <div class="s-tx"><b>Envío y aduanas</b><span>Precio de envío según unidades y aduana por pedido</span></div>
+        <div class="s-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg></div>
+      </button>
     </div>
     <div class="set-group"><h3>Seguridad</h3>
       <button class="set-item" onclick="openChangePass()">
@@ -398,6 +431,8 @@ function loadState(){
   try{const raw=localStorage.getItem(KEY);state=raw?JSON.parse(raw):null;}catch(e){state=null;}
   if(!state||!state.settings) state={settings:{password:'admin123'},clientes:[],articulos:[],pedidos:[],presupuestos:[]};
   if(!state.presupuestos) state.presupuestos=[];
+  if(!state.settings.envioTramos) state.settings.envioTramos=[];
+  if(state.settings.aduanaPedido==null) state.settings.aduanaPedido=0;
   saveState();
 }
 function saveState(){localStorage.setItem(KEY,JSON.stringify(state));}
@@ -548,7 +583,13 @@ function renderArticulos(){
         <div class="card-info"><h3>${esc(a.nombre)}</h3><div class="sub">${a.categoria?esc(a.categoria)+' · ':''}${a.opciones.length} opción${a.opciones.length!==1?'es':''}</div></div>
         <div style="text-align:right"><div class="price-big">${minP===maxP?eur(minP):eur(minP)+' – '+eur(maxP)}</div><div class="price-small">venta</div></div>
       </div>
-      <div class="tag-row">${a.opciones.map(o=>`<span class="tag">${esc(o.nombre)} · ${eur(o.precio)}${o.costo?' · coste '+eur(o.costo):''}</span>`).join('')}</div>
+      <div class="tag-row">${a.opciones.map(o=>{
+        const ct=costeTotal(a,o);
+        if(ct==null) return `<span class="tag">${esc(o.nombre)} · ${eur(o.precio)}</span>`;
+        const ben=o.precio-ct, m=o.precio?ben/o.precio*100:0;
+        return `<span class="tag">${esc(o.nombre)} · ${eur(o.precio)} · coste ${eur(ct)}</span><span class="margen-pill ${ben>=0?'pos':'neg'}">${ben>=0?'+':''}${eur(ben)} (${pct(m)}) sin envío</span>`;
+      }).join('')}</div>
+
       <div class="card-actions">
         <button class="mini-btn sec" onclick="openArticuloForm('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>Editar</button>
         <button class="mini-btn dan" onclick="delArticulo('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
@@ -557,12 +598,30 @@ function renderArticulos(){
   }).join('');
 }
 
+/* Coste de producto por unidad (null si no tiene coste puesto) */
+function costeTotal(a,o){return (+o.costo>0)?+o.costo:null;}
+
+/* Envío según unidades: busca el primer tramo que cubra esas unidades */
+function envioPara(uds){
+  const tr=(state.settings.envioTramos||[]).slice().sort((x,y)=>x.hasta-y.hasta);
+  if(!tr.length||!uds)return 0;
+  const t=tr.find(x=>uds<=x.hasta)||tr[tr.length-1];
+  return t.precio;
+}
+function aduanaDefecto(){return +state.settings.aduanaPedido||0;}
+function pedidoMargen(p){
+  const cst=p.items.reduce((s,i)=>s+(i.costo||0)*i.cantidad,0);
+  if(!cst)return null;
+  return p.total-cst-(+p.envio||0)-(+p.aduanas||0);
+}
+const pct=n=>(Math.round(n*10)/10).toString().replace('.',',')+'%';
+
 function opcRowHTML(o){
   return `<div class="b-item opc-row">
     <div class="grid2" style="grid-template-columns:1fr 90px 90px 34px;margin-top:0;align-items:center">
       <input class="op-nombre" placeholder="Opción (ej: Versión fan, Talla L...)" value="${esc(o?o.nombre:'')}">
       <input class="op-precio" type="number" step="0.01" min="0" placeholder="Precio" value="${o?o.precio:''}">
-      <input class="op-costo" type="number" step="0.01" min="0" placeholder="Coste" value="${o&&o.costo?o.costo:''}">
+      <input class="op-costo" type="number" step="0.01" min="0" placeholder="Coste prod." value="${o&&o.costo?o.costo:''}">
       <button class="b-del" onclick="this.closest('.opc-row').remove()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
   </div>`;
@@ -574,11 +633,11 @@ function openArticuloForm(id){
   openSheet(`<h2>${a?'Editar artículo':'Nuevo artículo'}</h2>
     <div class="field"><label>Nombre *</label><input id="fAName" value="${a?esc(a.nombre):''}" placeholder="Ej: Real Madrid 2026"></div>
     <div class="field"><label>Categoría</label><input id="fACat" value="${a?esc(a.categoria||''):''}" placeholder="Ej: LaLiga, Selecciones..."></div>
-    <div class="field"><label>Opciones y precios *</label></div>
+    <div class="field"><label>Opciones: nombre · precio venta · coste producto *</label></div>
     <div id="opcContainer">${ops.map(opcRowHTML).join('')}</div>
     <button class="add-line" onclick="document.getElementById('opcContainer').insertAdjacentHTML('beforeend',opcRowHTML(null))">+ Añadir opción</button>
     <button class="btn pri" onclick="saveArticulo('${id||''}')">${a?'Guardar cambios':'Añadir artículo'}</button>
-    <p class="hint">El coste es opcional: te sirve para calcular el margen en pedidos.</p>`);
+    <p class="hint">El coste de producto es lo que pagas al proveedor por unidad.<br>El envío y las aduanas se calculan en cada pedido.</p>`);
 }
 
 function saveArticulo(id){
@@ -631,36 +690,50 @@ function bArtChange(i,v){builderItems[i].articuloId=v;builderItems[i].opcionIdx=
 function bOpcChange(i,v){builderItems[i].opcionIdx=parseInt(v)||0;updateTotals();}
 function bCantChange(i,v){builderItems[i].cantidad=Math.max(1,parseInt(v)||1);renderBuilder();}
 
+let extrasManual={envio:false,aduanas:false};
 function calcTotals(){
-  let venta=0,coste=0;
+  let venta=0,coste=0,uds=0;
   builderItems.forEach(it=>{
     const a=articuloById(it.articuloId);if(!a)return;
     const o=a.opciones[it.opcionIdx||0];if(!o)return;
-    venta+=o.precio*it.cantidad;
-    if(o.costo)coste+=o.costo*it.cantidad;
+    venta+=o.precio*it.cantidad;uds+=it.cantidad;
+    const ct=costeTotal(a,o);
+    if(ct!=null)coste+=ct*it.cantidad;
   });
-  return {venta,coste,margen:venta-coste};
+  const fE=document.getElementById('fEnvio'),fA=document.getElementById('fAduanas');
+  if(fE&&!extrasManual.envio)fE.value=uds?envioPara(uds):'';
+  if(fA&&!extrasManual.aduanas)fA.value=uds&&aduanaDefecto()?aduanaDefecto():'';
+  const envio=fE?(parseFloat(fE.value)||0):0, aduanas=fA?(parseFloat(fA.value)||0):0;
+  return {venta,coste,uds,envio,aduanas,margen:venta-coste-envio-aduanas};
 }
+function extraChange(campo){extrasManual[campo]=true;updateTotals();}
 function updateTotals(){
   const t=calcTotals();
   const el=document.getElementById('bTotals');
   if(el)el.innerHTML=`
-    <div class="tot-row"><span>Coste (proveedor)</span><span>${t.coste?eur(t.coste):'—'}</span></div>
-    ${t.coste?`<div class="tot-row"><span>Margen</span><span class="margen-pill ${t.margen>=0?'pos':'neg'}" style="padding:0 8px">${eur(t.margen)}</span></div>`:''}
+    <div class="tot-row"><span>Coste productos (${t.uds} ud${t.uds!==1?'s':''})</span><span>${t.coste?eur(t.coste):'—'}</span></div>
+    ${t.envio?`<div class="tot-row"><span>Envío</span><span>${eur(t.envio)}</span></div>`:''}
+    ${t.aduanas?`<div class="tot-row"><span>Aduanas</span><span>${eur(t.aduanas)}</span></div>`:''}
+    ${t.coste?`<div class="tot-row"><span>Beneficio</span><span class="margen-pill ${t.margen>=0?'pos':'neg'}" style="padding:0 8px">${eur(t.margen)}</span></div>`:''}
     <div class="tot-row grand"><span>TOTAL</span><span class="price-big">${eur(t.venta)}</span></div>`;
 }
 function validItems(){
   return builderItems.filter(it=>it.articuloId&&articuloById(it.articuloId)).map(it=>{
     const a=articuloById(it.articuloId);const o=a.opciones[it.opcionIdx||0];
-    return {articuloId:a.id,nombre:a.nombre,opcion:o.nombre,precio:o.precio,costo:o.costo||0,cantidad:it.cantidad};
+    return {articuloId:a.id,nombre:a.nombre,opcion:o.nombre,precio:o.precio,costo:costeTotal(a,o)||0,cantidad:it.cantidad};
   });
 }
 function clienteSelectHTML(selId,pre){
   return `<div class="field"><label>Cliente *</label><select id="${selId}"><option value="">Selecciona cliente...</option>${state.clientes.map(c=>`<option value="${c.id}" ${c.id===pre?'selected':''}>${esc(c.nombre)}</option>`).join('')}</select></div>`;
 }
 function builderHTML(){
+  extrasManual={envio:false,aduanas:false};
   return `<div id="bItems"></div>
     <button class="add-line" onclick="addBItem()">+ Añadir artículo</button>
+    <div class="grid-2f">
+      <div class="field"><label>Mi envío €</label><input id="fEnvio" type="number" step="0.01" min="0" placeholder="0,00" oninput="extraChange('envio')"></div>
+      <div class="field"><label>Aduanas €</label><input id="fAduanas" type="number" step="0.01" min="0" placeholder="0,00" oninput="extraChange('aduanas')"></div>
+    </div>
     <div class="totals-box" id="bTotals"></div>`;
 }
 
@@ -716,7 +789,7 @@ function savePedido(){
   const items=validItems();
   if(!items.length){toast('Añade al menos un artículo válido');return;}
   const t=calcTotals();
-  state.pedidos.unshift({id:uid(),clienteId,items,total:t.venta,margen:t.coste?t.margen:null,estado:'pendiente',notas:document.getElementById('fPNotes').value.trim(),fecha:Date.now(),historial:[{fecha:Date.now(),texto:'Pedido creado'}]});
+  state.pedidos.unshift({id:uid(),clienteId,items,total:t.venta,envio:t.envio,aduanas:t.aduanas,margen:t.coste?t.margen:null,estado:'pendiente',notas:document.getElementById('fPNotes').value.trim(),fecha:Date.now(),historial:[{fecha:Date.now(),texto:'Pedido creado'}]});
   saveState();closeModal();refreshAll();toast('Pedido creado');
 }
 
@@ -727,9 +800,13 @@ function openPedidoDetail(id){
     <p style="font-size:12.5px;color:var(--muted);margin:-8px 0 14px">${fdate(p.fecha)} · ${p.id.slice(-6).toUpperCase()}</p>
     <div class="totals-box">
       ${p.items.map(i=>`<div class="tot-row"><span>${esc(i.nombre)}${i.opcion?' · '+esc(i.opcion):''} ×${i.cantidad}</span><span>${eur(i.precio*i.cantidad)}</span></div>`).join('')}
-      ${p.margen!=null?`<div class="tot-row"><span>Margen estimado</span><span class="margen-pill ${p.margen>=0?'pos':'neg'}" style="padding:0 8px">${eur(p.margen)}</span></div>`:''}
       <div class="tot-row grand"><span>TOTAL</span><span class="price-big">${eur(p.total)}</span></div>
     </div>
+    <div class="grid-2f">
+      <div class="field"><label>Mi envío €</label><input type="number" step="0.01" min="0" value="${p.envio||''}" placeholder="0,00" onchange="updPedidoExtra('${p.id}','envio',this.value)"></div>
+      <div class="field"><label>Aduanas €</label><input type="number" step="0.01" min="0" value="${p.aduanas||''}" placeholder="0,00" onchange="updPedidoExtra('${p.id}','aduanas',this.value)"></div>
+    </div>
+    <div class="totals-box" id="dMargen">${margenDetalleHTML(p)}</div>
     <div class="field"><label>Estado</label><select id="dEstado" onchange="detailEstadoChange('${p.id}',this.value)">${PED_ESTADOS.map(e=>`<option value="${e}" ${p.estado===e?'selected':''}>${ESTADO_LABEL[e]}</option>`).join('')}</select></div>
     ${p.notas?`<div class="field"><label>Notas</label><div style="font-size:13.5px;color:var(--muted);background:var(--card);border-radius:var(--radius-s);padding:12px 14px">${esc(p.notas)}</div></div>`:''}
     <div class="timeline"><h4>Historial</h4>${p.historial.map(h=>`<div class="tl-item"><div class="tl-dot"></div><div class="tl-txt"><b>${fdate(h.fecha)}</b> — ${esc(h.texto)}</div></div>`).join('')}</div>
@@ -738,6 +815,23 @@ function openPedidoDetail(id){
       <button class="btn sec" onclick="downloadPedidoPDF('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>PDF</button>
       <button class="btn dan" onclick="delPedido('${p.id}')">Eliminar</button>
     </div>`);
+}
+
+function margenDetalleHTML(p){
+  const cst=p.items.reduce((s,i)=>s+(i.costo||0)*i.cantidad,0);
+  if(!cst)return `<div class="tot-row"><span>Sin coste de producto: no se puede calcular el beneficio</span></div>`;
+  const m=pedidoMargen(p);
+  return `<div class="tot-row"><span>Coste productos</span><span>${eur(cst)}</span></div>
+    <div class="tot-row"><span>Envío + aduanas</span><span>${eur((+p.envio||0)+(+p.aduanas||0))}</span></div>
+    <div class="tot-row grand"><span>Beneficio</span><span class="margen-pill ${m>=0?'pos':'neg'}" style="padding:2px 10px;font-size:14px">${eur(m)} · ${pct(p.total?m/p.total*100:0)}</span></div>`;
+}
+function updPedidoExtra(id,campo,val){
+  const p=state.pedidos.find(x=>x.id===id);if(!p)return;
+  p[campo]=Math.max(0,parseFloat(val)||0);
+  p.margen=pedidoMargen(p);
+  saveState();refreshAll();
+  const box=document.getElementById('dMargen');if(box)box.innerHTML=margenDetalleHTML(p);
+  toast('Coste actualizado');
 }
 
 function detailEstadoChange(id,newEstado){
@@ -794,7 +888,8 @@ function savePresupuesto(){
   if(!clienteId){toast('Selecciona un cliente');return;}
   const items=validItems();
   if(!items.length){toast('Añade al menos un artículo válido');return;}
-  state.presupuestos.unshift({id:uid(),clienteId,items,estado:'pendiente',fecha:Date.now()});
+  const t=calcTotals();
+  state.presupuestos.unshift({id:uid(),clienteId,items,envio:t.envio,aduanas:t.aduanas,estado:'pendiente',fecha:Date.now()});
   saveState();closeModal();refreshAll();toast('Presupuesto creado');
 }
 
@@ -802,7 +897,10 @@ function aceptarPresupuesto(id){
   const pr=state.presupuestos.find(x=>x.id===id);if(!pr)return;
   if(!confirm('¿Convertir este presupuesto en pedido?'))return;
   const t=pr.items.reduce((s,i)=>s+i.precio*i.cantidad,0);
-  state.pedidos.unshift({id:uid(),clienteId:pr.clienteId,items:pr.items,total:t,margen:null,estado:'pendiente',notas:'',fecha:Date.now(),historial:[{fecha:Date.now(),texto:'Creado desde presupuesto'}]});
+  const uds=pr.items.reduce((s,i)=>s+i.cantidad,0);
+  const np={id:uid(),clienteId:pr.clienteId,items:pr.items,total:t,envio:pr.envio!=null?pr.envio:envioPara(uds),aduanas:pr.aduanas!=null?pr.aduanas:aduanaDefecto()};
+  np.margen=pedidoMargen(np);
+  state.pedidos.unshift({...np,estado:'pendiente',notas:'',fecha:Date.now(),historial:[{fecha:Date.now(),texto:'Creado desde presupuesto'}]});
   pr.estado='aceptado';
   saveState();refreshAll();toast('Presupuesto convertido en pedido');
 }
@@ -868,12 +966,72 @@ function generarPDF(titulo,cliente,items,total,fecha){
 }
 
 /* ================= AJUSTES / BACKUP ================= */
+function renderRentabilidad(){
+  const el=document.getElementById('rentBox');if(!el)return;
+  const peds=state.pedidos.filter(p=>p.estado!=='cancelado');
+  let ventas=0,coste=0,sinCoste=0;
+  const porArt={},porMes={};
+  const hoy=new Date();
+  const meses=[];
+  for(let k=5;k>=0;k--){const d=new Date(hoy.getFullYear(),hoy.getMonth()-k,1);const key=d.getFullYear()+'-'+d.getMonth();meses.push({key,label:d.toLocaleDateString('es-ES',{month:'short'}).replace('.','')});porMes[key]={v:0,b:0};}
+  peds.forEach(p=>{
+    const d=new Date(p.fecha);const mk=d.getFullYear()+'-'+d.getMonth();
+    const udsC=p.items.reduce((s,i)=>s+(i.costo>0?i.cantidad:0),0);
+    const extraUd=udsC?((+p.envio||0)+(+p.aduanas||0))/udsC:0;
+    p.items.forEach(i=>{
+      const v=i.precio*i.cantidad;
+      if(!(i.costo>0)){sinCoste+=v;return;}
+      const c=(i.costo+extraUd)*i.cantidad;
+      ventas+=v;coste+=c;
+      const k=i.nombre;
+      if(!porArt[k])porArt[k]={v:0,b:0,u:0};
+      porArt[k].v+=v;porArt[k].b+=v-c;porArt[k].u+=i.cantidad;
+      if(porMes[mk]){porMes[mk].v+=v;porMes[mk].b+=v-c;}
+    });
+  });
+  if(!ventas){
+    el.innerHTML=`<div class="set-group"><h3>Rentabilidad</h3><div class="card"><p style="font-size:13.5px;color:var(--muted);line-height:1.5">Aún no hay datos de rentabilidad.<br>Pon el coste en tus artículos y crea pedidos para ver aquí tu beneficio.</p></div></div>`;
+    return;
+  }
+  const ben=ventas-coste, m=ben/ventas*100;
+  const ringP=Math.max(0,Math.min(100,m));
+  const ringC=m>=0?'var(--ok)':'var(--danger)';
+  const pc=Math.min(100,coste/ventas*100);
+  const maxMes=Math.max(1,...meses.map(x=>porMes[x.key].v));
+  const top=Object.entries(porArt).sort((a,b)=>b[1].b-a[1].b).slice(0,5);
+  const maxB=Math.max(1,...top.map(t=>Math.abs(t[1].b)));
+  el.innerHTML=`<div class="set-group"><h3>Rentabilidad</h3>
+    <div class="card">
+      <div class="rent-hero">
+        <div class="ring" style="--p:${ringP};--rc:${ringC}"><span>${pct(m)}<small>margen</small></span></div>
+        <div class="rent-nums">
+          <div class="r-big" style="color:${m>=0?'var(--ok)':'var(--danger)'}">${eur(ben)}</div>
+          <div class="r-sub">Beneficio de ${peds.length} pedido${peds.length!==1?'s':''} no cancelado${peds.length!==1?'s':''}</div>
+        </div>
+      </div>
+      <div class="stack"><div style="width:${pc}%;background:var(--danger)"></div><div style="width:${100-pc}%;background:var(--ok)"></div></div>
+      <div class="legend"><span><i style="background:var(--danger)"></i>Costes ${eur(coste)} (producto, envío y aduanas)</span><span><i style="background:var(--ok)"></i>Beneficio ${eur(Math.max(0,ben))}</span><span>Ventas ${eur(ventas)}</span></div>
+      ${sinCoste?`<p class="hint" style="text-align:left">No incluye ${eur(sinCoste)} en ventas de artículos sin coste puesto.</p>`:''}
+    </div>
+    <div class="card">
+      <div class="rent-h">Últimos 6 meses</div>
+      <div class="mchart">${meses.map(x=>{const d=porMes[x.key];return `<div class="mcol"><div class="mbars"><div style="height:${d.v/maxMes*100}%;background:var(--card3)"></div><div style="height:${Math.max(0,d.b)/maxMes*100}%;background:var(--accent)"></div></div><span>${x.label}</span></div>`;}).join('')}</div>
+      <div class="legend" style="margin-top:10px"><span><i style="background:var(--card3)"></i>Ventas</span><span><i style="background:var(--accent)"></i>Beneficio</span></div>
+    </div>
+    <div class="card">
+      <div class="rent-h">Artículos más rentables</div>
+      ${top.map(([n,d])=>`<div class="hbar"><div class="hbar-top"><b>${esc(n)}</b><span style="color:${d.b>=0?'var(--ok)':'var(--danger)'};font-weight:700;flex-shrink:0">${eur(d.b)} · ${pct(d.v?d.b/d.v*100:0)}</span></div><div class="hbar-track"><div class="hbar-fill" style="width:${Math.max(0,d.b)/maxB*100}%"></div></div></div>`).join('')}
+    </div>
+  </div>`;
+}
+
 function renderAjustes(){
   const activos=state.pedidos.filter(p=>!['entregado','cancelado'].includes(p.estado)).length;
   document.getElementById('statGrid').innerHTML=`
     <div class="stat"><b>${state.clientes.length}</b><span>Clientes</span></div>
     <div class="stat"><b>${activos}</b><span>Pedidos activos</span></div>
     <div class="stat"><b>${eur(state.pedidos.filter(p=>p.estado==='entregado').reduce((s,p)=>s+p.total,0))}</b><span>Vendido</span></div>`;
+  renderRentabilidad();
 }
 
 function exportBackup(){
@@ -893,12 +1051,41 @@ function importBackup(input){
       const d=JSON.parse(e.target.result);
       if(!d.clientes||!d.articulos)throw 0;
       if(!confirm('Esto sustituirá todos los datos actuales. ¿Continuar?'))return;
-      state=d;if(!state.presupuestos)state.presupuestos=[];if(!state.settings)state.settings={password:'admin123'};
+      state=d;if(!state.presupuestos)state.presupuestos=[];if(!state.settings)state.settings={password:'admin123'};if(!state.settings.envioTramos)state.settings.envioTramos=[];if(state.settings.aduanaPedido==null)state.settings.aduanaPedido=0;
       saveState();refreshAll();toast('Backup importado');
     }catch(err){toast('Archivo no válido');}
   };
   r.readAsText(f);input.value='';
 }
+function tramoRowHTML(t){
+  return `<div class="b-item tramo-row"><div class="grid2" style="grid-template-columns:1fr 1fr 34px;margin-top:0;align-items:center">
+    <input class="tr-hasta" type="number" min="1" step="1" placeholder="Hasta (uds)" value="${t?t.hasta:''}">
+    <input class="tr-precio" type="number" min="0" step="0.01" placeholder="Precio €" value="${t?t.precio:''}">
+    <button class="b-del" onclick="this.closest('.tramo-row').remove()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </div></div>`;
+}
+function openCostesConfig(){
+  const tr=(state.settings.envioTramos||[]).slice().sort((a,b)=>a.hasta-b.hasta);
+  openSheet(`<h2>Envío y aduanas</h2>
+    <div class="field"><label>Aduana por pedido €</label><input id="fCfgAduana" type="number" step="0.01" min="0" value="${state.settings.aduanaPedido||''}" placeholder="0,00"></div>
+    <div class="field"><label>Mi envío según unidades</label></div>
+    <div id="tramosBox">${(tr.length?tr:[null]).map(tramoRowHTML).join('')}</div>
+    <button class="add-line" onclick="document.getElementById('tramosBox').insertAdjacentHTML('beforeend',tramoRowHTML(null))">+ Añadir tramo</button>
+    <button class="btn pri" onclick="saveCostesConfig()">Guardar</button>
+    <p class="hint">Ejemplo: hasta 1 ud → 8 €, hasta 3 uds → 12 €, hasta 10 uds → 20 €.<br>Si un pedido supera el último tramo, se usa el precio del último.<br>En cada pedido puedes cambiar el envío y la aduana a mano.</p>`);
+}
+function saveCostesConfig(){
+  const tramos=[];
+  document.querySelectorAll('#tramosBox .tramo-row').forEach(r=>{
+    const h=parseInt(r.querySelector('.tr-hasta').value),p=parseFloat(r.querySelector('.tr-precio').value);
+    if(h>0&&!isNaN(p))tramos.push({hasta:h,precio:p});
+  });
+  tramos.sort((a,b)=>a.hasta-b.hasta);
+  state.settings.envioTramos=tramos;
+  state.settings.aduanaPedido=Math.max(0,parseFloat(document.getElementById('fCfgAduana').value)||0);
+  saveState();closeModal();refreshAll();toast('Costes guardados');
+}
+
 function openChangePass(){
   openSheet(`<h2>Cambiar contraseña</h2>
     <div class="field"><label>Contraseña actual</label><input type="password" id="fPass0"></div>
